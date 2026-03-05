@@ -4,6 +4,7 @@ from app.config import settings
 from app.routes import upload, projects, health
 from app.logging_config import configure_logging
 from app.middleware.request_context import RequestContextMiddleware
+from app.middleware.security_headers import SecurityHeadersMiddleware
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -24,6 +25,9 @@ async def _startup() -> None:
         log_level="DEBUG" if settings.api_debug else settings.log_level,
     )
     logger.info("api_start")
+
+# Security headers (OWASP A05 – Security Misconfiguration)
+app.add_middleware(SecurityHeadersMiddleware)
 
 # Request context / correlation
 app.add_middleware(RequestContextMiddleware)

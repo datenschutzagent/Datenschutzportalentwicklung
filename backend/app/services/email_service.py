@@ -1,4 +1,5 @@
 import aiosmtplib
+import html as html_lib
 import ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -208,21 +209,23 @@ class EmailService:
         folder_url = self._build_nextcloud_web_ui_folder_url(
             folder_path=f"{settings.nextcloud_base_path}/{project_id}"
         )
-        files_html = "\n".join(f"<li>{name}</li>" for name in file_names)
-        
+        # Escape all user-supplied values before embedding in HTML (OWASP A03 – XSS / CWE-79)
+        esc = html_lib.escape
+        files_html = "\n".join(f"<li>{esc(name)}</li>" for name in file_names)
+
         # We can also use a template for this eventually
         html_content = f"""
         <html>
         <body>
             <h2>Neuer Dokument-Upload</h2>
-            <p><strong>Projekt-ID:</strong> {project_id}</p>
-            <p><strong>Projekttitel:</strong> {project_title}</p>
-            <p><strong>Uploader E-Mail:</strong> {uploader_email}</p>
+            <p><strong>Projekt-ID:</strong> {esc(project_id)}</p>
+            <p><strong>Projekttitel:</strong> {esc(project_title)}</p>
+            <p><strong>Uploader E-Mail:</strong> {esc(uploader_email)}</p>
             <p><strong>Dateien:</strong></p>
             <ul>
                 {files_html}
             </ul>
-            <p><a href="{folder_url}">Open folder in next.Hessenbox</a></p>
+            <p><a href="{esc(folder_url)}">Open folder in next.Hessenbox</a></p>
         </body>
         </html>
         """

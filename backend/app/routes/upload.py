@@ -1,5 +1,8 @@
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
+from pydantic import EmailStr, TypeAdapter
 from typing import List
+
+_email_adapter = TypeAdapter(EmailStr)
 from app.services.nextcloud import NextcloudService
 from app.services.email_service import EmailService
 from app.models.upload import UploadResponse
@@ -10,8 +13,27 @@ import os
 import json
 import re
 import structlog
+from pathlib import PurePosixPath
 
 from app.logging_config import hmac_sha256_hex
+
+
+def _sanitize_filename(filename: str) -> str:
+    """
+    Sanitize an uploaded filename to prevent path traversal (CWE-22 / OWASP A01).
+    Strips directory components and replaces unsafe characters.
+    """
+    # Take only the basename – discard any path components (e.g. "../../etc/passwd.pdf")
+    name = os.path.basename(filename)
+    # Replace characters that are dangerous in file-system paths
+    name = re.sub(r'[^\w.\-]', '_', name)
+    # Collapse multiple dots to prevent extension spoofing like "file..pdf"
+    name = re.sub(r'\.{2,}', '.', name)
+    # Limit length to avoid filesystem issues
+    if len(name) > 200:
+        stem, sep, suffix = name.rpartition('.')
+        name = stem[:196] + sep + suffix if sep else name[:200]
+    return name or "file"
 
 logger = structlog.get_logger(__name__)
 
@@ -35,6 +57,20 @@ async def upload_documents(
     """
     Upload data protection documents to Nextcloud
     """
+    # Validate email format (OWASP A03 – Injection / input validation)
+    try:
+        email = _email_adapter.validate_python(email)
+    except Exception:
+        raise HTTPException(status_code=422, detail="Invalid email address")
+
+    # Restrict project_type to known values to prevent unexpected behaviour
+    if project_type not in ("new", "existing"):
+        raise HTTPException(status_code=422, detail="Invalid project_type")
+
+    # Restrict language to known values
+    if language not in ("de", "en"):
+        raise HTTPException(status_code=422, detail="Invalid language")
+
     email_hash = hmac_sha256_hex(email, settings.log_redaction_secret)
     logger.info(
         "upload_received",
@@ -86,8 +122,10 @@ async def upload_documents(
                     status_code=413,
                     detail=f"File {file.filename} exceeds maximum size of 50 MB"
                 )
-            
-            file_ext = os.path.splitext(file.filename)[1].lower()
+
+            # Sanitize filename before extension check to prevent path traversal (OWASP A01 / CWE-22)
+            safe_name = _sanitize_filename(file.filename or "upload")
+            file_ext = os.path.splitext(safe_name)[1].lower()
             if file_ext not in settings.allowed_file_types:
                 logger.warning("file_extension_disallowed", file_extension=file_ext)
                 raise HTTPException(
@@ -121,17 +159,19 @@ async def upload_documents(
         uploaded_files = []
         logger.info("files_upload_started", project_id=project_id, files_count=len(files))
         for idx, file in enumerate(files, 1):
-            category = categories_map.get(file.filename, "sonstiges")
+            # Sanitize the filename to prevent path traversal on the remote storage (OWASP A01 / CWE-22)
+            safe_name = _sanitize_filename(file.filename or "upload")
+            category = categories_map.get(file.filename, categories_map.get(safe_name, "sonstiges"))
             logger.debug("file_uploading", project_id=project_id, index=idx, total=len(files), category=category)
-            
+
             # Upload directly to project folder, no category subfolders
-            file_path = f"{project_path}/{file.filename}"
+            file_path = f"{project_path}/{safe_name}"
             if not await nextcloud.upload_file(file, file_path):
                 logger.error("file_upload_failed", project_id=project_id, category=category)
-                raise HTTPException(status_code=500, detail=f"Failed to upload file: {file.filename}")
+                raise HTTPException(status_code=500, detail=f"Failed to upload file: {safe_name}")
             
             uploaded_files.append({
-                "filename": file.filename,
+                "filename": safe_name,
                 "category": category,
                 "path": file_path
             })
