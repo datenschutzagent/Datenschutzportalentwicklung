@@ -155,7 +155,7 @@ export function ConfirmationPage({
             </li>
             <li className="flex items-start gap-2">
               <span className="text-blue-600 mt-1">•</span>
-              <span dangerouslySetInnerHTML={{ __html: t('confirmation.step3') }} />
+              <span>{t('confirmation.step3')}</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-blue-600 mt-1">•</span>

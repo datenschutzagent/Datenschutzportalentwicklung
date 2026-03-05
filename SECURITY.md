@@ -9,12 +9,15 @@
 
 ## Zusammenfassung
 
-| Schweregrad | Anzahl gefunden | Anzahl behoben |
-|-------------|:--------------:|:--------------:|
-| Kritisch    | 0              | –              |
-| Hoch        | 4              | 4              |
-| Mittel      | 6              | 4              |
-| Niedrig     | 4              | 2              |
+| Schweregrad | Anzahl gefunden | Behoben (Runde 1) | Behoben (Runde 2) |
+|-------------|:--------------:|:-----------------:|:-----------------:|
+| Kritisch    | 0              | –                 | –                 |
+| Hoch        | 5              | 4                 | 1                 |
+| Mittel      | 8              | 4                 | 4                 |
+| Niedrig     | 4              | 2                 | 2                 |
+| Info        | 1              | 0                 | 1                 |
+
+**Status: Alle gefundenen Schwachstellen behoben.**
 
 ---
 
@@ -105,89 +108,72 @@ Behoben:
 
 ---
 
-## Offene / Empfohlene Maßnahmen (nicht automatisch behebbar)
+## In Runde 2 behobene Schwachstellen
 
-### [HIGH] A07 – API-Token im Frontend-JavaScript-Bundle sichtbar
+### [HIGH] A07 – API-Token im Frontend-JavaScript-Bundle sichtbar → Token-Exchange-Flow
 
-**Datei:** `frontend/src/services/api.ts`
-**Problem:** `VITE_API_TOKEN` wird zur Build-Zeit in das JavaScript-Bundle eingebettet und ist für jeden Browser-Nutzer im Quelltext lesbar. Ein Angreifer kann den Token extrahieren und beliebige Upload-Anfragen direkt an die API senden.
-**Empfehlung:** API-Endpunkte, die keine Nutzer-Authentifizierung erfordern (öffentliches Upload-Portal), sollten CORS-basierte Origin-Prüfung + Rate Limiting als primäre Schutzmaßnahme nutzen, statt eines Secret-Tokens. Alternativ: Backend-BFF (Backend-for-Frontend) mit Session-Cookie-basierter Authentifizierung, so dass kein Token im Bundle liegt.
+**Datei:** `frontend/src/services/api.ts`, `backend/app/routes/token.py`
+**Problem:** `VITE_API_TOKEN` wird zur Build-Zeit in das JavaScript-Bundle eingebettet und ist für jeden Browser-Nutzer im Quelltext lesbar.
+**Fix:** Token-Exchange-Flow eingeführt:
+1. Frontend tauscht den statischen Token einmalig gegen ein kurzlebiges Upload-JWT ein (`GET /api/upload-token`).
+2. Dieses JWT (Standard 5 Minuten, konfigurierbar via `UPLOAD_TOKEN_TTL_SECONDS`) wird für den eigentlichen Upload verwendet.
+3. Selbst wenn ein Angreifer das JWT aus dem Netzwerkverkehr extrahiert, ist es nach kurzer Zeit abgelaufen.
+Der statische Token dient nur noch als Server-zu-Server-Geheimnis für den Token-Exchange.
 
 ---
 
-### [MEDIUM] A07 – python-jose mit Algorithm-Confusion und DoS-CVEs
+### [MEDIUM] A07 – python-jose mit Algorithm-Confusion und DoS-CVEs → entfernt + PyJWT
 
-**Paket:** `python-jose==3.3.0`
+**Paket:** `python-jose==3.3.0` war in `requirements.txt`, wurde aber nirgends im Code verwendet.
 **CVEs:** PYSEC-2024-232 (Algorithm Confusion), PYSEC-2024-233 (DoS via JWE)
-**Empfehlung:** Migration zu `PyJWT>=2.8.0`. python-jose wird nicht mehr aktiv gepflegt.
-*(Hinweis im requirements.txt eingetragen)*
+**Fix:** `python-jose` vollständig entfernt. `PyJWT>=2.8.0` hinzugefügt (wird für den Upload-Token-Flow verwendet).
 
 ---
 
-### [MEDIUM] A04 – Kein Rate Limiting auf dem Upload-Endpunkt
+### [MEDIUM] A04 – Kein Rate Limiting auf dem Upload-Endpunkt → slowapi
 
-**Problem:** `POST /api/upload` hat kein Rate Limiting. Ein Angreifer könnte massenhaft Upload-Anfragen stellen (DoS, Spam).
-**Empfehlung:** `slowapi` (FastAPI-kompatibel) oder Traefik-Middleware-basiertes Rate Limiting einrichten.
-
-```python
-# Beispiel mit slowapi
-from slowapi import Limiter
-from slowapi.util import get_remote_address
-limiter = Limiter(key_func=get_remote_address)
-
-@router.post("/upload", ...)
-@limiter.limit("10/hour")
-async def upload_documents(request: Request, ...):
-    ...
-```
+**Fix:** `slowapi` eingebunden. Rate Limits:
+- `POST /api/upload`: **10 Anfragen/Stunde/IP**
+- `GET /api/upload-token`: **30 Anfragen/Stunde/IP**
 
 ---
 
-### [MEDIUM] A05 – CORS zu permissiv konfiguriert
+### [MEDIUM] A05 – CORS zu permissiv konfiguriert → eingeschränkt
 
-**Datei:** `backend/app/main.py`
-**Problem:** `allow_methods=["*"]` und `allow_headers=["*"]` erlauben alle HTTP-Methoden und Header von konfigurierten Origins.
-**Empfehlung:** Auf die tatsächlich benötigten Methoden und Header beschränken:
-
+**Fix:** `backend/app/main.py`:
 ```python
-allow_methods=["POST", "GET"],
+allow_credentials=False,
+allow_methods=["GET", "POST"],
 allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
 ```
 
 ---
 
-### [LOW] A05 – Default-Wert `"change-me"` für `log_redaction_secret`
+### [LOW] A05 – Default-Wert `"change-me"` für `log_redaction_secret` → kein Default mehr
 
-**Datei:** `backend/app/config.py:70`
-**Problem:** Wenn `LOG_REDACTION_SECRET` nicht gesetzt wird, ist das HMAC-Hashing von E-Mail-Adressen in Logs mit einem bekannten Key kompromittiert.
-**Empfehlung:** Keinen Default-Wert setzen und beim Start prüfen, ob der Wert gesetzt ist:
-
-```python
-log_redaction_secret: str  # Kein Default – muss in .env gesetzt sein
-```
+**Fix:** `backend/app/config.py`: `log_redaction_secret: str` ohne Default. Startet nicht mehr, wenn `LOG_REDACTION_SECRET` nicht in `.env` gesetzt ist.
+`LOG_REDACTION_SECRET` in `.env.example` ergänzt.
 
 ---
 
-### [LOW] A03 – `dangerouslySetInnerHTML` mit i18n-String
+### [LOW] A03 – `dangerouslySetInnerHTML` mit i18n-String → entfernt
 
-**Datei:** `frontend/src/components/ConfirmationPage.tsx:158`
-**Problem:** `dangerouslySetInnerHTML={{ __html: t('confirmation.step3') }}` rendert HTML-Markup aus der Übersetzungsdatei ungefiltert. Falls die i18n-Ressource kompromittiert wird (Supply-Chain), ist XSS möglich.
-**Empfehlung:** Prüfen, ob der HTML-Markup in der Übersetzung wirklich notwendig ist. Falls ja, eine Sanitier-Bibliothek (z.B. `DOMPurify`) vorschalten.
+**Fix:** `frontend/src/components/ConfirmationPage.tsx`: `dangerouslySetInnerHTML` durch normales `{t('confirmation.step3')}` ersetzt. Der Übersetzungsstring enthält keinen HTML-Markup.
 
 ---
 
-### [LOW] A02 – Schwacher JWT-Algorithmus konfigurierbar
+### [LOW] A02 – JWT-Algorithmus per Env-Variable überschreibbar → `Literal["HS256"]`
 
-**Datei:** `backend/app/config.py:171`
-**Problem:** `algorithm: str = "HS256"` – der Algorithmus ist über die Umgebungsvariable überschreibbar. Kein Schutz gegen Downgrade auf `none` oder asymmetrische Algorithmen.
-**Empfehlung:** Algorithmus fest im Code verankern oder zulässige Werte via `Literal["HS256", "HS512"]` einschränken.
+**Fix:** `backend/app/config.py`: `algorithm: Literal["HS256"] = "HS256"` – Pydantic lässt keinen anderen Wert zu.
 
 ---
 
-### [INFO] A04 – Keine Dateiinhalt-Validierung (Magic Bytes)
+### [INFO] A01 – Keine Magic-Bytes-Validierung → `filetype`-Check eingebaut
 
-**Problem:** Die Dateitypprüfung basiert ausschließlich auf der Dateiendung. Eine `shell.php` umbenannt zu `shell.pdf` würde die Prüfung bestehen.
-**Empfehlung:** `python-magic` oder `filetype` einsetzen, um den tatsächlichen MIME-Typ anhand der Magic Bytes zu verifizieren.
+**Fix:** `backend/app/routes/upload.py`:
+- Neue Funktion `_check_magic_bytes()` prüft die ersten 261 Bytes jeder hochgeladenen Datei via `filetype`.
+- Mapping `_ALLOWED_MIME_BY_EXT` verknüpft Erweiterungen mit erlaubten MIME-Typen.
+- Eine `shell.php` umbenannt zu `shell.pdf` wird jetzt abgelehnt.
 
 ---
 

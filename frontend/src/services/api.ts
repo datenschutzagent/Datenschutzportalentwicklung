@@ -22,6 +22,9 @@ export interface UploadResult {
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+// VITE_API_TOKEN is the static server-to-server secret.
+// It is only used to obtain a short-lived upload token from /api/upload-token
+// and is never sent directly to the upload endpoint.
 const API_TOKEN = import.meta.env.VITE_API_TOKEN;
 
 export class ApiError extends Error {
@@ -32,6 +35,25 @@ export class ApiError extends Error {
     this.name = 'ApiError';
     this.i18nKey = i18nKey;
   }
+}
+
+/**
+ * Exchange the static API token for a short-lived upload JWT.
+ * This limits the exposure of the static secret: it is only used once per upload
+ * session, and the resulting JWT expires after a few minutes (OWASP A07).
+ */
+async function fetchUploadToken(): Promise<string> {
+  const response = await fetch(`${API_BASE_URL}/upload-token`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${API_TOKEN}`,
+    },
+  });
+  if (!response.ok) {
+    throw new ApiError('error.authFailed');
+  }
+  const data = await response.json();
+  return data.token as string;
 }
 
 export const api = {
@@ -53,6 +75,16 @@ export const api = {
     if (!API_BASE_URL) {
       log.error('api_config_missing_base_url');
       throw new ApiError('error.configMissingApiUrl');
+    }
+
+    // Obtain a short-lived upload token (OWASP A07 – token not embedded in upload)
+    let uploadToken: string;
+    try {
+      uploadToken = await fetchUploadToken();
+      log.debug('api_upload_token_obtained', { requestId });
+    } catch {
+      log.error('api_upload_token_fetch_failed', { requestId });
+      throw new ApiError('error.authFailed');
     }
 
     const formData = new FormData();
@@ -78,12 +110,12 @@ export const api = {
     data.categories.forEach((category) => {
       category.files.forEach((file) => {
         let fileToUpload = file;
-        
+
         // Renaming logic based on requirements
         let prefix = '';
         // Use first 10 chars of title, replace potentially problematic chars for filenames
         const titlePart = data.projectTitle.substring(0, 10).replace(/[\/\\:]/g, '_');
-        
+
         switch (category.key) {
           case 'verantwortung':
             prefix = 'Verpflichtung_';
@@ -134,7 +166,7 @@ export const api = {
       const response = await fetch(uploadUrl, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${API_TOKEN}`,
+          'Authorization': `Bearer ${uploadToken}`,
           'X-Request-ID': requestId,
         },
         body: formData,
@@ -174,7 +206,7 @@ export const api = {
 
       const result = await response.json();
       log.info('api_upload_success', { requestId });
-      
+
       return {
         success: result.success,
         timestamp: result.timestamp,

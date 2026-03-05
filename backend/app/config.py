@@ -66,8 +66,9 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     env: str = "dev"
     service_name: str = "datenschutzportal-backend"
-    # Used for HMAC hashing of PII (e.g. email_hash). Must be set in production.
-    log_redaction_secret: str = "change-me"
+    # Used for HMAC hashing of PII (e.g. email_hash) in logs.
+    # No default – must be set via environment variable (OWASP A02 / CWE-798).
+    log_redaction_secret: str
 
     # API
     api_host: str = "0.0.0.0"
@@ -168,7 +169,10 @@ class Settings(BaseSettings):
     # Security
     secret_key: str
     api_token: str
-    algorithm: str = "HS256"
+    # algorithm is only used for signing upload session tokens; HS256 is the only accepted value.
+    algorithm: Literal["HS256"] = "HS256"
+    # Lifetime in seconds for short-lived upload session tokens issued by /api/upload-token
+    upload_token_ttl_seconds: int = 300  # 5 minutes
     
     # File Upload
     max_file_size: int = 52428800  # 50 MB
