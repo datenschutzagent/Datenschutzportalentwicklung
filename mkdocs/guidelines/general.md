@@ -1,83 +1,66 @@
-**Add your own guidelines here**
-<!--
+# Allgemeine Richtlinien
 
-System Guidelines
+Dieses Dokument beschreibt die allgemeinen Coding- und Projekt-Richtlinien für das Datenschutzportal.
 
-Use this file to provide the AI with rules and guidelines you want it to follow.
-This template outlines a few examples of things you can add. You can add your own sections and format it to suit your needs
+## Sprachen
 
-TIP: More context isn't always better. It can confuse the LLM. Try and add the most important rules you need
+| Bereich | Sprache |
+|---------|---------|
+| Quellcode (Variablen, Funktionen, Kommentare) | Englisch |
+| Externe Dokumentation (MkDocs, diese Datei) | Deutsch |
+| E-Mail-Templates, UI-Texte | Deutsch und Englisch (i18n) |
+| Git-Commit-Messages | Englisch (Conventional Commits) |
 
-# General guidelines
+Kommentare im Code erklären das **Warum**, nicht das Was. Offensichtlichen Code nicht kommentieren.
 
-## Coding Standards & Rules
+## Architektur-Grundsätze
 
-The following rules must be followed for this project:
+- **Modularität**: Code in kleine, fokussierte Funktionen und Module aufteilen. Eine Funktion, eine Aufgabe.
+- **Keine vorzeitigen Abstraktionen**: Abstrahiere erst, wenn ein Muster dreimal auftritt – nicht vorher.
+- **Bibliotheken bevorzugen**: Vorhandene, gepflegte Bibliotheken nutzen statt Eigenimplementierungen.
+- **Kein toter Code**: Ungenutzte Variablen, Funktionen und Importe entfernen.
+- **Keine Kompatibilitäts-Shims**: Keine Rückwärtskompatibilitäts-Hacks für entfernte Features.
 
-1.  **Language**:
-    *   **Source Code**: Comments and internal documentation within the code must be in **English**.
-    *   **External Documentation (MkDocs)**: User and developer documentation in this folder is in **German**.
+## Datei-Organisation
 
-2.  **Style & Tone**:
-    *   Do **not** use emojis or icons in communication or documentation unless explicitly requested.
+- **Kleine Dateien**: Hilfsfunktionen und Komponenten in eigene Dateien auslagern.
+- **Frontend**: Jede Komponente in eigener Datei unter `src/components/`; UI-Primitives unter `src/components/ui/`.
+- **Backend**: Routes, Services und Models strikt trennen (`app/routes/`, `app/services/`, `app/models/`).
+- **Keine Barrel-Exports** ohne klaren Mehrwert.
 
-3.  **Architecture**:
-    *   **Modularization**: Keep code modular. Use libraries where appropriate instead of reinventing the wheel.
-    *   Refactor code regularly to keep functions small and focused.
+## Layout & CSS (Frontend)
 
-4.  **Version Control**:
-    *   Create regular commits.
-    *   Use descriptive commit messages.
+- **Flexbox und Grid bevorzugen**: `position: absolute` nur wenn zwingend nötig.
+- **Tailwind-Klassen-Reihenfolge**: Layout → Abstand → Typografie → Farben → Effekte.
+- **Responsive by default**: Mobile-first entwerfen.
+- **Keine Duplikation**: Wiederkehrende Klassen-Kombinationen als Komponente extrahieren.
 
-## General guidelines
+Beispiel für korrekte Reihenfolge:
+```tsx
+<div className="flex flex-col gap-4 p-6 text-lg bg-white text-gray-900 rounded-lg shadow-md">
+```
 
-Any general rules you want the AI to follow.
+## Sicherheit
 
-For example:
+- **Keine Secrets im Code**: API-Keys, Passwörter und Tokens ausschließlich über Umgebungsvariablen.
+- **Eingaben validieren**: Alle externen Eingaben (Formulare, API-Parameter) server-seitig validieren.
+- **Keine `any`-Typen** in TypeScript: `unknown` verwenden und explizit casten.
+- **HTML-Ausgabe escapen**: Nutzereingaben, die in HTML eingebettet werden, mit `html.escape()` (Python) oder dem React-Escaping behandeln.
 
-* Only use absolute positioning when necessary. Opt for responsive and well structured layouts that use flexbox and grid by default
-* Refactor code as you go to keep code clean
-* Keep file sizes small and put helper functions and components in their own files.
+## Emoji-Policy
 
---------------
+Keine Emojis in Code, Kommentaren, Dokumentation oder Commit-Messages – es sei denn, der Nutzer bittet ausdrücklich darum.
 
-# Design system guidelines
-Rules for how the AI should make generations look like your company's design system
+## Version Control
 
-Additionally, if you select a design system to use in the prompt box, you can reference
-your design system's components, tokens, variables and components.
-For example:
+- **Regelmäßige Commits**: Kleine, atomare Commits mit klaren Nachrichten.
+- **Conventional Commits**: Format `<type>(<scope>): <subject>` (Details in [Contributing](contributing.md)).
+- **Branch-Namen**: `feature/`, `fix/`, `docs/`, `refactor/`, `test/` als Präfixe.
+- **Kein Force-Push auf `main`**.
 
-* Use a base font-size of 14px
-* Date formats should always be in the format “Jun 10”
-* The bottom toolbar should only ever have a maximum of 4 items
-* Never use the floating action button with the bottom toolbar
-* Chips should always come in sets of 3 or more
-* Don't use a dropdown if there are 2 or fewer options
+## Code-Qualität
 
-You can also create sub sections and add more specific details
-For example:
-
-
-## Button
-The Button component is a fundamental interactive element in our design system, designed to trigger actions or navigate
-users through the application. It provides visual feedback and clear affordances to enhance user experience.
-
-### Usage
-Buttons should be used for important actions that users need to take, such as form submissions, confirming choices,
-or initiating processes. They communicate interactivity and should have clear, action-oriented labels.
-
-### Variants
-* Primary Button
-  * Purpose : Used for the main action in a section or page
-  * Visual Style : Bold, filled with the primary brand color
-  * Usage : One primary button per section to guide users toward the most important action
-* Secondary Button
-  * Purpose : Used for alternative or supporting actions
-  * Visual Style : Outlined with the primary color, transparent background
-  * Usage : Can appear alongside a primary button for less important actions
-* Tertiary Button
-  * Purpose : Used for the least important actions
-  * Visual Style : Text-only with no border, using primary color
-  * Usage : For actions that should be available but not emphasized
--->
+- **Refaktoriere laufend**: Technische Schulden direkt beim Bearbeiten der Datei beheben, nicht ansammeln.
+- **Early Return bevorzugen**: Tief verschachtelte `if`-Blöcke vermeiden.
+- **TypeScript Strict Mode**: Immer eingeschaltet; keine Unterdrückung von Typ-Fehlern mit `// @ts-ignore`.
+- **Python PEP 8**: Einhalten; Type Hints für alle öffentlichen Funktionen.

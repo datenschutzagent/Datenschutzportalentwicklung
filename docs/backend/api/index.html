@@ -174,6 +174,17 @@
       </a>
 </li>
 <li class="md-tabs__item">
+<a class="md-tabs__link" href="../../security/">
+        
+  
+  
+    
+  
+  Sicherheit
+
+      </a>
+</li>
+<li class="md-tabs__item">
 <a class="md-tabs__link" href="../../guidelines/contributing/">
           
   
@@ -315,6 +326,37 @@
       
     </span>
 </a>
+<nav aria-label="Authentifizierung" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#token-exchange-flow">
+<span class="md-ellipsis">
+      
+        Token-Exchange-Flow
+      
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#request-correlation-x-request-id">
+<span class="md-ellipsis">
+      
+        Request Correlation (X-Request-ID)
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#rate-limiting">
+<span class="md-ellipsis">
+      
+        Rate Limiting
+      
+    </span>
+</a>
 </li>
 <li class="md-nav__item">
 <a class="md-nav__link" href="#endpunkte">
@@ -326,6 +368,28 @@
 </a>
 <nav aria-label="Endpunkte" class="md-nav">
 <ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#auth">
+<span class="md-ellipsis">
+      
+        Auth
+      
+    </span>
+</a>
+<nav aria-label="Auth" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#get-apiupload-token">
+<span class="md-ellipsis">
+      
+        GET /api/upload-token
+      
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
 <li class="md-nav__item">
 <a class="md-nav__link" href="#upload">
 <span class="md-ellipsis">
@@ -493,9 +557,21 @@
   </span>
 </a>
 </li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../security/">
+<span class="md-ellipsis">
+    
+  
+    Sicherheit
+  
+
+    
+  </span>
+</a>
+</li>
 <li class="md-nav__item md-nav__item--nested">
-<input class="md-nav__toggle md-toggle md-toggle--indeterminate" id="__nav_7" type="checkbox"/>
-<label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+<input class="md-nav__toggle md-toggle md-toggle--indeterminate" id="__nav_8" type="checkbox"/>
+<label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
 <span class="md-ellipsis">
     
   
@@ -506,8 +582,8 @@
   </span>
 <span class="md-nav__icon md-icon"></span>
 </label>
-<nav aria-expanded="false" aria-labelledby="__nav_7_label" class="md-nav" data-md-level="1">
-<label class="md-nav__title" for="__nav_7">
+<nav aria-expanded="false" aria-labelledby="__nav_8_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_8">
 <span class="md-nav__icon md-icon"></span>
             
   
@@ -577,6 +653,37 @@
       
     </span>
 </a>
+<nav aria-label="Authentifizierung" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#token-exchange-flow">
+<span class="md-ellipsis">
+      
+        Token-Exchange-Flow
+      
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#request-correlation-x-request-id">
+<span class="md-ellipsis">
+      
+        Request Correlation (X-Request-ID)
+      
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#rate-limiting">
+<span class="md-ellipsis">
+      
+        Rate Limiting
+      
+    </span>
+</a>
 </li>
 <li class="md-nav__item">
 <a class="md-nav__link" href="#endpunkte">
@@ -588,6 +695,28 @@
 </a>
 <nav aria-label="Endpunkte" class="md-nav">
 <ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#auth">
+<span class="md-ellipsis">
+      
+        Auth
+      
+    </span>
+</a>
+<nav aria-label="Auth" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#get-apiupload-token">
+<span class="md-ellipsis">
+      
+        GET /api/upload-token
+      
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
 <li class="md-nav__item">
 <a class="md-nav__link" href="#upload">
 <span class="md-ellipsis">
@@ -683,17 +812,117 @@
 <div class="md-content" data-md-component="content">
 <article class="md-content__inner md-typeset">
 <h1 id="api-dokumentation">API Dokumentation<a class="headerlink" href="#api-dokumentation" title="Permanent link">¶</a></h1>
-<p>Das Backend basiert auf FastAPI und stellt Endpunkte für Dokumenten-Uploads, Projektmanagement und System-Health-Checks bereit.</p>
+<p>Das Backend basiert auf FastAPI und stellt Endpunkte für Dokumenten-Uploads, Token-Austausch, Projektmanagement und System-Health-Checks bereit.</p>
 <h2 id="authentifizierung">Authentifizierung<a class="headerlink" href="#authentifizierung" title="Permanent link">¶</a></h2>
-<p>Die API ist durch Bearer Tokens geschützt. Der Token muss im Header jeder Anfrage (außer Health-Check) mitgesendet werden.</p>
-<p><strong>Header:</strong>
-<code>Authorization: Bearer &lt;Ihr-Token&gt;</code></p>
-<p>Der Token wird in der <code>.env</code> Datei (<code>API_TOKEN</code>) konfiguriert.</p>
+<p>Die API verwendet einen <strong>zweistufigen Token-Exchange-Flow</strong>, um zu verhindern, dass ein langlebiger statischer Token im Frontend-Bundle exponiert wird.</p>
+<h3 id="token-exchange-flow">Token-Exchange-Flow<a class="headerlink" href="#token-exchange-flow" title="Permanent link">¶</a></h3>
+<pre class="mermaid"><code>sequenceDiagram
+    participant F as Frontend
+    participant A as Backend API
+
+    F-&gt;&gt;A: GET /api/upload-token&lt;br/&gt;Authorization: Bearer &lt;API_TOKEN&gt;
+    A-&gt;&gt;A: Statischen Token prüfen (hmac.compare_digest)
+    A--&gt;&gt;F: { "token": "&lt;JWT&gt;", "expires_in": 300 }
+    F-&gt;&gt;A: POST /api/upload&lt;br/&gt;Authorization: Bearer &lt;JWT&gt;
+    A-&gt;&gt;A: JWT signatur und Ablaufzeit prüfen
+    A--&gt;&gt;F: Upload-Ergebnis</code></pre>
+<p><strong>Schritt 1 – Upload-Token anfordern:</strong>
+Das Frontend sendet den statischen <code>API_TOKEN</code> (aus dem Build eingebettet via <code>VITE_API_TOKEN</code>) an <code>GET /api/upload-token</code>. Das Backend antwortet mit einem kurz-lebigen JWT (Standard: 5 Minuten).</p>
+<p><strong>Schritt 2 – Upload durchführen:</strong>
+Das Frontend nutzt den erhaltenen JWT als Bearer-Token für <code>POST /api/upload</code>.</p>
+<p>Der statische Token wird damit nie direkt für sensible Operationen verwendet – er dient nur zum Austausch gegen ein zeitlich begrenztes Credential.</p>
+<h2 id="request-correlation-x-request-id">Request Correlation (X-Request-ID)<a class="headerlink" href="#request-correlation-x-request-id" title="Permanent link">¶</a></h2>
+<p>Für strukturiertes Logging und bessere Nachverfolgbarkeit unterstützt die API einen Correlation-Header:</p>
+<ul>
+<li><strong>Request</strong>: <code>X-Request-ID: &lt;uuid&gt;</code></li>
+<li><strong>Response</strong>: Die API spiegelt <code>X-Request-ID</code> zurück (oder generiert eine neue, wenn keine mitgesendet wurde).</li>
+</ul>
+<p>Diese ID erscheint in Backend-Logs als <code>request_id</code>.</p>
+<h2 id="rate-limiting">Rate Limiting<a class="headerlink" href="#rate-limiting" title="Permanent link">¶</a></h2>
+<p>Endpunkte mit Rate-Limiting (pro IP-Adresse):</p>
+<table>
+<thead>
+<tr>
+<th>Endpunkt</th>
+<th>Limit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>POST /api/upload</code></td>
+<td>10 Anfragen / Stunde</td>
+</tr>
+<tr>
+<td><code>GET /api/upload-token</code></td>
+<td>30 Anfragen / Stunde</td>
+</tr>
+</tbody>
+</table>
+<p>Bei Überschreitung antwortet die API mit <code>429 Too Many Requests</code>.</p>
 <h2 id="endpunkte">Endpunkte<a class="headerlink" href="#endpunkte" title="Permanent link">¶</a></h2>
+<h3 id="auth">Auth<a class="headerlink" href="#auth" title="Permanent link">¶</a></h3>
+<h4 id="get-apiupload-token"><code>GET /api/upload-token</code><a class="headerlink" href="#get-apiupload-token" title="Permanent link">¶</a></h4>
+<p>Tauscht den statischen API-Token gegen einen kurz-lebigen Upload-JWT.</p>
+<p><strong>Authentifizierung:</strong> Erforderlich (statischer <code>API_TOKEN</code>)</p>
+<p><strong>Header:</strong>
+<div class="highlight"><pre><span></span><code>Authorization: Bearer &lt;API_TOKEN&gt;
+</code></pre></div></p>
+<p><strong>Rate Limit:</strong> 30 Anfragen/Stunde pro IP</p>
+<p><strong>Antwort:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"token"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;JWT-String&gt;"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"expires_in"</span><span class="p">:</span><span class="w"> </span><span class="mi">300</span>
+<span class="p">}</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Feld</th>
+<th>Typ</th>
+<th>Beschreibung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>token</code></td>
+<td>string</td>
+<td>Kurz-lebiger JWT für Upload-Anfragen</td>
+</tr>
+<tr>
+<td><code>expires_in</code></td>
+<td>integer</td>
+<td>Gültigkeitsdauer in Sekunden (Standard: 300)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Fehler:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Beschreibung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>401 Unauthorized</code></td>
+<td>Ungültiger oder fehlender API-Token</td>
+</tr>
+<tr>
+<td><code>429 Too Many Requests</code></td>
+<td>Rate-Limit überschritten</td>
+</tr>
+</tbody>
+</table>
+<hr/>
 <h3 id="upload">Upload<a class="headerlink" href="#upload" title="Permanent link">¶</a></h3>
 <h4 id="post-apiupload"><code>POST /api/upload</code><a class="headerlink" href="#post-apiupload" title="Permanent link">¶</a></h4>
 <p>Lädt Datenschutzdokumente in die Nextcloud hoch und löst Benachrichtigungen aus.</p>
-<p><strong>Authentifizierung:</strong> Erforderlich</p>
+<p><strong>Authentifizierung:</strong> Erforderlich (Upload-JWT aus <code>/api/upload-token</code>)</p>
+<p><strong>Header:</strong>
+<div class="highlight"><pre><span></span><code>Authorization: Bearer &lt;JWT&gt;
+</code></pre></div></p>
+<p><strong>Rate Limit:</strong> 10 Anfragen/Stunde pro IP</p>
 <p><strong>Parameter (Multipart/Form-Data):</strong></p>
 <table>
 <thead>
@@ -707,7 +936,7 @@
 <tbody>
 <tr>
 <td><code>email</code></td>
-<td>string</td>
+<td>string (EmailStr)</td>
 <td>E-Mail-Adresse des Einreichers</td>
 <td style="text-align: center;">Ja</td>
 </tr>
@@ -726,13 +955,13 @@
 <tr>
 <td><code>institution</code></td>
 <td>string</td>
-<td>"university" oder "clinic"</td>
+<td><code>"university"</code> oder <code>"clinic"</code></td>
 <td style="text-align: center;">Ja</td>
 </tr>
 <tr>
 <td><code>is_prospective_study</code></td>
 <td>boolean</td>
-<td>Handelt es sich um eine prospektive Studie?</td>
+<td>Prospektive Studie?</td>
 <td style="text-align: center;">Nein</td>
 </tr>
 <tr>
@@ -750,29 +979,72 @@
 <tr>
 <td><code>file_categories</code></td>
 <td>string</td>
-<td>JSON-String der Dateinamen auf Kategorien abbildet</td>
+<td>JSON-String: Dateiname → Kategorie</td>
 <td style="text-align: center;">Nein</td>
 </tr>
 <tr>
 <td><code>project_type</code></td>
 <td>string</td>
-<td>"new" oder "existing"</td>
-<td style="text-align: center;">Nein (Standard: "new")</td>
+<td><code>"new"</code> oder <code>"existing"</code></td>
+<td style="text-align: center;">Nein (Standard: <code>"new"</code>)</td>
+</tr>
+<tr>
+<td><code>language</code></td>
+<td>string</td>
+<td><code>"de"</code> oder <code>"en"</code></td>
+<td style="text-align: center;">Nein (Standard: <code>"de"</code>)</td>
 </tr>
 </tbody>
 </table>
+<p><strong>Validierung:</strong>
+- <code>email</code> wird via Pydantic <code>EmailStr</code> geprüft
+- <code>institution</code>, <code>project_type</code> und <code>language</code> werden gegen Allowlists validiert
+- Dateinamen werden sanitiert (Path-Traversal-Schutz)
+- Dateiinhalte werden via Magic-Bytes geprüft (nicht nur Dateiendung)
+- Dateigröße wird gegen <code>MAX_FILE_SIZE</code> geprüft</p>
 <p><strong>Antwort:</strong></p>
-<div class="highlight"><pre><span></span><code><a href="#__codelineno-0-1" id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="p">{</span>
-<a href="#__codelineno-0-2" id="__codelineno-0-2" name="__codelineno-0-2"></a><span class="w">  </span><span class="nt">"success"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<a href="#__codelineno-0-3" id="__codelineno-0-3" name="__codelineno-0-3"></a><span class="w">  </span><span class="nt">"project_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Projekt_Titel_2023-10-27"</span><span class="p">,</span>
-<a href="#__codelineno-0-4" id="__codelineno-0-4" name="__codelineno-0-4"></a><span class="w">  </span><span class="nt">"timestamp"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2023-10-27T10:00:00.000000"</span><span class="p">,</span>
-<a href="#__codelineno-0-5" id="__codelineno-0-5" name="__codelineno-0-5"></a><span class="w">  </span><span class="nt">"files_uploaded"</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
-<a href="#__codelineno-0-6" id="__codelineno-0-6" name="__codelineno-0-6"></a><span class="w">  </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Documents uploaded successfully"</span>
-<a href="#__codelineno-0-7" id="__codelineno-0-7" name="__codelineno-0-7"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"success"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"project_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Projekt_Titel_2026-01-15"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"timestamp"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-01-15T10:00:00.000000"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"files_uploaded"</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Documents uploaded successfully"</span>
+<span class="p">}</span>
 </code></pre></div>
+<p><strong>Fehler:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Beschreibung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>401 Unauthorized</code></td>
+<td>Ungültiger oder abgelaufener JWT</td>
+</tr>
+<tr>
+<td><code>413 Request Entity Too Large</code></td>
+<td>Datei überschreitet <code>MAX_FILE_SIZE</code></td>
+</tr>
+<tr>
+<td><code>415 Unsupported Media Type</code></td>
+<td>Dateityp nicht erlaubt</td>
+</tr>
+<tr>
+<td><code>422 Unprocessable Entity</code></td>
+<td>Validierungsfehler (E-Mail, Felder)</td>
+</tr>
+<tr>
+<td><code>429 Too Many Requests</code></td>
+<td>Rate-Limit überschritten</td>
+</tr>
+</tbody>
+</table>
 <h4 id="get-apiuploadstatusproject_id"><code>GET /api/upload/status/{project_id}</code><a class="headerlink" href="#get-apiuploadstatusproject_id" title="Permanent link">¶</a></h4>
 <p>Ruft den Upload-Status und Metadaten für ein bestimmtes Projekt ab.</p>
-<p><strong>Authentifizierung:</strong> Erforderlich</p>
+<p><strong>Authentifizierung:</strong> Erforderlich (Upload-JWT)</p>
 <p><strong>Parameter:</strong></p>
 <table>
 <thead>
@@ -792,25 +1064,27 @@
 </tr>
 </tbody>
 </table>
-<p><strong>Antwort:</strong></p>
-<p>Gibt das Metadaten-Objekt des Projekts zurück.</p>
+<p><strong>Antwort:</strong> Metadaten-Objekt des Projekts (aus Nextcloud)</p>
+<hr/>
 <h3 id="projekte">Projekte<a class="headerlink" href="#projekte" title="Permanent link">¶</a></h3>
 <h4 id="get-api"><code>GET /api/</code><a class="headerlink" href="#get-api" title="Permanent link">¶</a></h4>
 <p>Listet alle Projekte auf.</p>
-<p><em>Hinweis: Dieser Endpunkt gibt aktuell eine leere Liste zurück und dient als Platzhalter.</em></p>
-<p><strong>Authentifizierung:</strong> Nicht explizit definiert (Router-Level möglich)</p>
-<p><strong>Antwort:</strong>
-<div class="highlight"><pre><span></span><code><a href="#__codelineno-1-1" id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="p">[]</span>
-</code></pre></div></p>
-<h3 id="health">Health<a class="headerlink" href="#health" title="Permanent link">¶</a></h3>
-<h4 id="get-apihealth"><code>GET /api/health</code><a class="headerlink" href="#get-apihealth" title="Permanent link">¶</a></h4>
-<p>Health-Check Endpunkt.</p>
+<p><strong>Hinweis:</strong> Dieser Endpunkt gibt aktuell eine leere Liste zurück und dient als Platzhalter für eine zukünftige Implementierung.</p>
 <p><strong>Authentifizierung:</strong> Nicht erforderlich</p>
 <p><strong>Antwort:</strong>
-<div class="highlight"><pre><span></span><code><a href="#__codelineno-2-1" id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="p">{</span>
-<a href="#__codelineno-2-2" id="__codelineno-2-2" name="__codelineno-2-2"></a><span class="w">  </span><span class="nt">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ok"</span>
-<a href="#__codelineno-2-3" id="__codelineno-2-3" name="__codelineno-2-3"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><span class="p">[]</span>
 </code></pre></div></p>
+<hr/>
+<h3 id="health">Health<a class="headerlink" href="#health" title="Permanent link">¶</a></h3>
+<h4 id="get-apihealth"><code>GET /api/health</code><a class="headerlink" href="#get-apihealth" title="Permanent link">¶</a></h4>
+<p>Health-Check-Endpunkt (für Deployment-Monitoring).</p>
+<p><strong>Authentifizierung:</strong> Nicht erforderlich</p>
+<p><strong>Antwort:</strong>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ok"</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<hr/>
 <h2 id="upload-workflow">Upload Workflow<a class="headerlink" href="#upload-workflow" title="Permanent link">¶</a></h2>
 <pre class="mermaid"><code>sequenceDiagram
     participant U as Benutzer (Frontend)
@@ -818,22 +1092,27 @@
     participant N as Nextcloud
     participant E as E-Mail Service
 
-    U-&gt;&gt;A: POST /api/upload (Dateien + Metadaten)
+    U-&gt;&gt;A: GET /api/upload-token (statischer Token)
+    A-&gt;&gt;A: Token prüfen (hmac.compare_digest)
+    A--&gt;&gt;U: { token: "&lt;JWT&gt;", expires_in: 300 }
+
+    U-&gt;&gt;A: POST /api/upload (JWT + Dateien + Metadaten)
     activate A
-    A-&gt;&gt;A: Authentifizierung prüfen
-    A-&gt;&gt;A: Validiere Dateien (Größe, Typ)
-    A-&gt;&gt;N: Erstelle Projektordner
+    A-&gt;&gt;A: JWT validieren (Signatur + Ablaufzeit)
+    A-&gt;&gt;A: Eingaben validieren (E-Mail, Typ, Allowlists)
+    A-&gt;&gt;A: Dateien prüfen (Magic-Bytes, Größe, Sanitierung)
+    A-&gt;&gt;N: Projektordner erstellen
 
     loop Für jede Datei
-        A-&gt;&gt;N: Lade Datei in Kategorie-Ordner
+        A-&gt;&gt;N: Datei in Kategorie-Ordner hochladen
     end
 
-    A-&gt;&gt;N: Lade Metadaten hoch (metadata.json)
-    A-&gt;&gt;N: Erstelle README.md
+    A-&gt;&gt;N: metadata.json hochladen
+    A-&gt;&gt;N: README.md erstellen
 
     par Benachrichtigungen
-        A-&gt;&gt;E: Sende Bestätigungs-E-Mail an Benutzer
-        A-&gt;&gt;E: Sende Benachrichtigung an Team
+        A-&gt;&gt;E: Bestätigungs-E-Mail an Einreicher
+        A-&gt;&gt;E: Benachrichtigung an Datenschutz-Team
     end
 
     A--&gt;&gt;U: 200 OK (Erfolgsmeldung)
