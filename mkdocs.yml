@@ -10,7 +10,8 @@ site_dir: docs
 
 plugins:
   - search
-  - mermaid2
+  - mermaid2:
+      javascript: mermaid.min.js
 
 theme:
   name: material
@@ -48,7 +49,7 @@ markdown_extensions:
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.highlight:
-      anchor_linenums: true
+      anchor_linenums: false
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - tables
@@ -66,6 +67,7 @@ nav:
     - Übersetzungen: frontend/translations.md
   - Deployment: deployment/index.md
   - "Tech Stack": deployment/tech_stack.md
+  - Sicherheit: security.md
   - Guidelines:
     - Contributing: guidelines/contributing.md
     - General: guidelines/general.md

@@ -173,6 +173,17 @@
       </a>
 </li>
 <li class="md-tabs__item">
+<a class="md-tabs__link" href="security/">
+        
+  
+  
+    
+  
+  Sicherheit
+
+      </a>
+</li>
+<li class="md-tabs__item">
 <a class="md-tabs__link" href="guidelines/contributing/">
           
   
@@ -413,9 +424,21 @@
   </span>
 </a>
 </li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="security/">
+<span class="md-ellipsis">
+    
+  
+    Sicherheit
+  
+
+    
+  </span>
+</a>
+</li>
 <li class="md-nav__item md-nav__item--nested">
-<input class="md-nav__toggle md-toggle md-toggle--indeterminate" id="__nav_7" type="checkbox"/>
-<label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+<input class="md-nav__toggle md-toggle md-toggle--indeterminate" id="__nav_8" type="checkbox"/>
+<label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
 <span class="md-ellipsis">
     
   
@@ -426,8 +449,8 @@
   </span>
 <span class="md-nav__icon md-icon"></span>
 </label>
-<nav aria-expanded="false" aria-labelledby="__nav_7_label" class="md-nav" data-md-level="1">
-<label class="md-nav__title" for="__nav_7">
+<nav aria-expanded="false" aria-labelledby="__nav_8_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_8">
 <span class="md-nav__icon md-icon"></span>
             
   
@@ -524,7 +547,7 @@
 <div class="md-content" data-md-component="content">
 <article class="md-content__inner md-typeset">
 <h1 id="datenschutzportal">Datenschutzportal<a class="headerlink" href="#datenschutzportal" title="Permanent link">¶</a></h1>
-<p>Das Datenschutzportal ist eine webbasierte Anwendung zur sicheren Einreichung und Verwaltung von datenschutzrelevanten Dokumenten für Forschungsprojekte.</p>
+<p>Das Datenschutzportal ist eine webbasierte Anwendung zur sicheren Einreichung und Verwaltung von datenschutzrelevanten Dokumenten für Forschungsprojekte der Universität Frankfurt und des Universitätsklinikums Frankfurt (UKF).</p>
 <h2 id="system-uberblick">System Überblick<a class="headerlink" href="#system-uberblick" title="Permanent link">¶</a></h2>
 <pre class="mermaid"><code>C4Context
     title System Context Diagram for Data Protection Portal
@@ -547,11 +570,14 @@
     Rel(smtp, dpo, "Sends notification", "Email")</code></pre>
 <h2 id="features">Features<a class="headerlink" href="#features" title="Permanent link">¶</a></h2>
 <ul>
-<li><strong>Intuitive Workflow</strong>: Schritt-für-Schritt Prozess zur Projekteinreichung.</li>
+<li><strong>Intuitiver Workflow</strong>: Schritt-für-Schritt-Prozess zur Projekteinreichung (Institution → Projekttyp → Upload → Bestätigung).</li>
 <li><strong>Sicherer Upload</strong>: Dateien werden direkt in eine gesicherte Nextcloud-Instanz hochgeladen.</li>
-<li><strong>Validierung</strong>: Automatische Prüfung auf Vollständigkeit und Dateiformate.</li>
+<li><strong>Validierung</strong>: Automatische Prüfung auf Vollständigkeit, Dateiformate und Dateiinhalt (Magic-Bytes).</li>
 <li><strong>Benachrichtigungen</strong>: Automatische E-Mail-Bestätigungen für Einreicher und das Datenschutz-Team.</li>
-<li><strong>Mehrsprachigkeit</strong>: Vollständige Unterstützung für Deutsch und Englisch.</li>
+<li><strong>Mehrsprachigkeit</strong>: Vollständige Unterstützung für Deutsch und Englisch (230+ Übersetzungsschlüssel).</li>
+<li><strong>Sicherheit (OWASP-konform)</strong>: Rate Limiting, JWT-Token-Exchange, HTTP-Sicherheits-Header, Timing-sicherer Token-Vergleich, PII-Redaktion in Logs.</li>
+<li><strong>Strukturiertes Logging</strong>: JSON-Logs mit Request-Korrelation via <code>X-Request-ID</code>.</li>
+<li><strong>Docker-Deployment</strong>: Produktionsreif mit Traefik-Reverse-Proxy und automatischem TLS (Let's Encrypt).</li>
 </ul>
 <h2 id="quick-links">Quick Links<a class="headerlink" href="#quick-links" title="Permanent link">¶</a></h2>
 <ul>
@@ -559,6 +585,8 @@
 <li><a href="backend/api/">API Dokumentation</a></li>
 <li><a href="frontend/architecture/">Frontend Architektur</a></li>
 <li><a href="deployment/">Deployment Guide</a></li>
+<li><a href="security/">Sicherheitsdokumentation</a></li>
+<li><a href="deployment/tech_stack/">Tech Stack</a></li>
 </ul>
 </article>
 </div>
