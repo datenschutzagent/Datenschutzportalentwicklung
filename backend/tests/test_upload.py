@@ -68,3 +68,77 @@ async def test_upload_documents():
             # Verify mock calls
             assert mock_nextcloud.create_folder.call_count >= 1
             assert mock_nextcloud.upload_file.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_upload_allows_payload_when_extension_is_allowed():
+    """
+    The upload endpoint only validates file extensions (no magic-bytes validation).
+    This test documents the expected behavior to avoid reintroducing content-based checks
+    that might cause false negatives (e.g. Office/ODF ZIP containers).
+    """
+    with patch("app.routes.upload.nextcloud") as mock_nextcloud, \
+         patch("app.routes.upload.email_service") as mock_email:
+
+        mock_nextcloud.test_connection = MagicMock(return_value=(True, "Connection successful"))
+        mock_nextcloud.create_folder = MagicMock(return_value=True)
+        mock_nextcloud.upload_file = AsyncMock(return_value=True)
+        mock_nextcloud.upload_metadata = AsyncMock(return_value=True)
+        mock_nextcloud.upload_content = AsyncMock(return_value=True)
+        mock_nextcloud.get_metadata = AsyncMock(return_value={})
+
+        mock_email.send_confirmation_email = AsyncMock(return_value=True)
+        mock_email.send_team_notification = AsyncMock(return_value=True)
+
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            headers = {"Authorization": f"Bearer {settings.api_token}"}
+            files = [
+                ("files", ("test.pdf", b"definitely not a real PDF", "application/pdf")),
+            ]
+            data = {
+                "email": "test@uni-frankfurt.de",
+                "project_title": "Test Project",
+                "institution": "university",
+                "is_prospective_study": "false",
+                "file_categories": json.dumps({"test.pdf": "sonstiges"}),
+            }
+
+            response = await client.post("/api/upload", data=data, files=files, headers=headers)
+            if response.status_code != 200:
+                print(f"Response error: {response.text}")
+            assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_upload_rejects_disallowed_extension():
+    with patch("app.routes.upload.nextcloud") as mock_nextcloud, \
+         patch("app.routes.upload.email_service") as mock_email:
+
+        # Even though Nextcloud is mocked, the request should fail before any storage actions.
+        mock_nextcloud.test_connection = MagicMock(return_value=(True, "Connection successful"))
+        mock_nextcloud.create_folder = MagicMock(return_value=True)
+        mock_nextcloud.upload_file = AsyncMock(return_value=True)
+        mock_nextcloud.upload_metadata = AsyncMock(return_value=True)
+        mock_nextcloud.upload_content = AsyncMock(return_value=True)
+        mock_nextcloud.get_metadata = AsyncMock(return_value={})
+
+        mock_email.send_confirmation_email = AsyncMock(return_value=True)
+        mock_email.send_team_notification = AsyncMock(return_value=True)
+
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            headers = {"Authorization": f"Bearer {settings.api_token}"}
+            files = [
+                ("files", ("shell.php", b"<?php echo 'hi';", "application/x-php")),
+            ]
+            data = {
+                "email": "test@uni-frankfurt.de",
+                "project_title": "Test Project",
+                "institution": "university",
+                "is_prospective_study": "false",
+                "file_categories": json.dumps({"shell.php": "sonstiges"}),
+            }
+
+            response = await client.post("/api/upload", data=data, files=files, headers=headers)
+            assert response.status_code == 400

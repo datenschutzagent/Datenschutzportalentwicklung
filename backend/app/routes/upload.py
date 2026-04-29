@@ -8,7 +8,6 @@ from app.config import settings
 from app.utils.auth import verify_token
 from app.limiter import limiter
 from datetime import datetime
-import filetype
 import os
 import json
 import re
@@ -17,43 +16,6 @@ import structlog
 from app.logging_config import hmac_sha256_hex
 
 _email_adapter = TypeAdapter(EmailStr)
-
-# Mapping of allowed file extensions to permitted MIME types (magic-bytes check).
-# Prevents extension spoofing (CWE-434 / OWASP A01).
-_ALLOWED_MIME_BY_EXT: dict[str, set[str]] = {
-    ".pdf":  {"application/pdf"},
-    ".doc":  {"application/msword"},
-    ".docx": {"application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
-    ".odt":  {"application/vnd.oasis.opendocument.text"},
-    ".ods":  {"application/vnd.oasis.opendocument.spreadsheet"},
-    ".odp":  {"application/vnd.oasis.opendocument.presentation"},
-    ".odf":  {"application/vnd.oasis.opendocument.formula"},
-    ".zip":  {"application/zip"},
-    ".png":  {"image/png"},
-    ".jpg":  {"image/jpeg"},
-    ".jpeg": {"image/jpeg"},
-    ".xlsx": {"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},
-    ".csv":  {"text/plain", "text/csv", "application/csv"},
-}
-
-
-def _check_magic_bytes(data: bytes, extension: str) -> bool:
-    """
-    Verify that the file's magic bytes match the declared extension.
-    Returns True if valid, False if the content type does not match.
-    CSV files have no unique magic bytes and are allowed through as-is.
-    """
-    allowed_mimes = _ALLOWED_MIME_BY_EXT.get(extension)
-    if allowed_mimes is None:
-        return False
-    # CSV: no magic bytes – trust the extension (size/content limits still apply)
-    if extension == ".csv":
-        return True
-    kind = filetype.guess(data)
-    if kind is None:
-        # filetype couldn't detect – only allow CSV (handled above) and plain text
-        return False
-    return kind.mime in allowed_mimes
 
 
 def _sanitize_filename(filename: str) -> str:
@@ -171,16 +133,6 @@ async def upload_documents(
                 raise HTTPException(
                     status_code=400,
                     detail=f"File type {file_ext} not allowed"
-                )
-
-            # Magic-bytes check: verify actual file content matches the declared extension (CWE-434)
-            header = await file.read(261)  # 261 bytes is sufficient for filetype detection
-            await file.seek(0)
-            if not _check_magic_bytes(header, file_ext):
-                logger.warning("file_magic_bytes_mismatch", file_extension=file_ext)
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"File content does not match declared type {file_ext}"
                 )
 
         logger.info("files_validation_passed")

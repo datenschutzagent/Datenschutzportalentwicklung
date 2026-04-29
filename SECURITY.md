@@ -168,12 +168,16 @@ allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
 
 ---
 
-### [INFO] A01 – Keine Magic-Bytes-Validierung → `filetype`-Check eingebaut
+### [INFO] A01 – Datei-Upload: Validierung nur per Endungs-Allowlist (Trade-off)
 
-**Fix:** `backend/app/routes/upload.py`:
-- Neue Funktion `_check_magic_bytes()` prüft die ersten 261 Bytes jeder hochgeladenen Datei via `filetype`.
-- Mapping `_ALLOWED_MIME_BY_EXT` verknüpft Erweiterungen mit erlaubten MIME-Typen.
-- Eine `shell.php` umbenannt zu `shell.pdf` wird jetzt abgelehnt.
+**Status:** Der frühere Magic-Bytes-Check via `filetype` wurde wieder entfernt, da er in der Praxis zu False-Negatives führen kann (z. B. Office-/ODF-Dateien als ZIP-Container) und Support-Aufwand verursacht.
+
+**Aktueller Stand:** `backend/app/routes/upload.py` validiert Uploads über:
+- Sanitizing des Dateinamens (`_sanitize_filename`, Schutz gegen Path Traversal)
+- Größenlimit (`MAX_FILE_SIZE`)
+- Endungs-Allowlist (`ALLOWED_FILE_TYPES`)
+
+**Hinweis:** Diese Entscheidung reduziert die Erkennung von „umbenannten“ Dateien (Extension-Spoofing). Empfohlene Kompensationsmaßnahmen sind ein Virenscan im Storage/Ingress (z. B. ICAP/ClamAV) und restriktive Zugriffs-/Download-Regeln für hochgeladene Dateien.
 
 ---
 
