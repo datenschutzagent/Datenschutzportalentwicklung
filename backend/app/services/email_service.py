@@ -5,7 +5,8 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from app.config import settings
-from typing import List, Dict, Any, Literal, Sequence
+from app.logging_config import hmac_sha256_hex
+from typing import List, Dict, Any, Literal, Optional, Sequence
 from datetime import datetime
 import structlog
 from urllib.parse import quote, urlsplit
@@ -30,11 +31,18 @@ class EmailService:
         self,
         to_email: str,
         subject: str,
-        html_content: str
+        html_content: str,
+        *,
+        mail_kind: Optional[str] = None,
+        project_id: Optional[str] = None,
+        recipient_hash: Optional[str] = None,
     ) -> bool:
         """
         Send an email via SMTP
         """
+        if recipient_hash is None:
+            recipient_hash = hmac_sha256_hex(to_email, settings.log_redaction_secret)
+
         try:
             message = MIMEMultipart('alternative')
             message['From'] = f"{settings.smtp_from_name} <{settings.smtp_from_email}>"
@@ -68,8 +76,18 @@ class EmailService:
             
             return True
         except Exception as e:
-            logger.error("email_send_failed", exc_info=True)
-            # raise
+            logger.error(
+                "email_send_failed",
+                mail_kind=mail_kind,
+                project_id=project_id,
+                recipient_hash=recipient_hash,
+                error_type=type(e).__name__,
+                error_message=str(e),
+                smtp_host=settings.smtp_host,
+                smtp_port=settings.smtp_port,
+                smtp_encryption=settings.smtp_encryption,
+                exc_info=True,
+            )
             return False
 
     async def send_template_email(
@@ -77,7 +95,11 @@ class EmailService:
         to_email: str,
         subject: str,
         template_name: str,
-        context: Dict[str, Any]
+        context: Dict[str, Any],
+        *,
+        mail_kind: Optional[str] = None,
+        project_id: Optional[str] = None,
+        recipient_hash: Optional[str] = None,
     ) -> bool:
         """
         Send an email using a Jinja2 template
@@ -89,9 +111,25 @@ class EmailService:
         try:
             template = self.template_env.get_template(template_name)
             html_content = template.render(**context)
-            return await self.send_email(to_email, subject, html_content)
+            return await self.send_email(
+                to_email,
+                subject,
+                html_content,
+                mail_kind=mail_kind,
+                project_id=project_id,
+                recipient_hash=recipient_hash,
+            )
         except Exception as e:
-            logger.error("email_template_render_failed", template_name=template_name, exc_info=True)
+            logger.error(
+                "email_template_render_failed",
+                template_name=template_name,
+                mail_kind=mail_kind,
+                project_id=project_id,
+                recipient_hash=recipient_hash,
+                error_type=type(e).__name__,
+                error_message=str(e),
+                exc_info=True,
+            )
             return False
     
     async def send_confirmation_email(
@@ -138,11 +176,15 @@ class EmailService:
             "project_type": project_type,
         }
         
+        recipient_hash = hmac_sha256_hex(to_email, settings.log_redaction_secret)
         return await self.send_template_email(
             to_email,
             subject,
             template_name,
-            context
+            context,
+            mail_kind="confirmation",
+            project_id=project_id,
+            recipient_hash=recipient_hash,
         )
     
     async def send_missing_documents_email(
@@ -230,11 +272,33 @@ class EmailService:
         </html>
         """
         
-        # Send to all team members
+        total_count = len(settings.notification_emails)
+        failed_count = 0
+
         for email in settings.notification_emails:
-            await self.send_email(email, subject, html_content)
-        
-        return True
+            success = await self.send_email(
+                email,
+                subject,
+                html_content,
+                mail_kind="team_notification",
+                project_id=project_id,
+                recipient_hash=hmac_sha256_hex(email, settings.log_redaction_secret),
+            )
+            if not success:
+                failed_count += 1
+
+        if failed_count == 0:
+            return True
+
+        if 0 < failed_count < total_count:
+            logger.error(
+                "team_notification_partial_failure",
+                project_id=project_id,
+                failed_count=failed_count,
+                total_count=total_count,
+            )
+
+        return False
 
     @staticmethod
     def _build_nextcloud_web_ui_folder_url(folder_path: str) -> str:

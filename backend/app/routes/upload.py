@@ -230,36 +230,50 @@ async def upload_documents(
         
         # Send confirmation email to user
         logger.info("confirmation_email_sending", project_id=project_id, email_hash=email_hash)
-        try:
-            await email_service.send_confirmation_email(
-                to_email=email,
-                project_id=project_id,
-                project_title=project_title,
-                uploader_name=uploader_name,
-                files=uploaded_files,
-                project_type=project_type,
-                language=language
-            )
+        confirmation_ok = await email_service.send_confirmation_email(
+            to_email=email,
+            project_id=project_id,
+            project_title=project_title,
+            uploader_name=uploader_name,
+            files=uploaded_files,
+            project_type=project_type,
+            language=language
+        )
+        if confirmation_ok:
             logger.info("confirmation_email_sent", project_id=project_id, email_hash=email_hash)
-        except Exception as e:
-            logger.error("confirmation_email_send_failed", project_id=project_id, exc_info=True)
-            # Don't fail the upload if email fails
-        
+        else:
+            logger.error("confirmation_email_send_failed", project_id=project_id, email_hash=email_hash)
+
         # Send notification to team
         logger.info("team_notification_sending", project_id=project_id)
-        try:
-            await email_service.send_team_notification(
-                project_id=project_id,
-                project_title=project_title,
-                uploader_email=email,
-                file_names=[f["filename"] for f in uploaded_files],
-            )
+        team_ok = await email_service.send_team_notification(
+            project_id=project_id,
+            project_title=project_title,
+            uploader_email=email,
+            file_names=[f["filename"] for f in uploaded_files],
+        )
+        if team_ok:
             logger.info("team_notification_sent", project_id=project_id)
-        except Exception as e:
-            logger.error("team_notification_send_failed", project_id=project_id, exc_info=True)
-            # Don't fail the upload if email fails
-        
-        logger.info("upload_completed", project_id=project_id, files_uploaded=len(files))
+        else:
+            logger.error("team_notification_send_failed", project_id=project_id)
+
+        email_delivery = {
+            "confirmation": "ok" if confirmation_ok else "failed",
+            "team": "ok" if team_ok else "failed",
+        }
+        if not confirmation_ok or not team_ok:
+            logger.warning(
+                "upload_email_delivery_failed",
+                project_id=project_id,
+                email_delivery=email_delivery,
+            )
+
+        logger.info(
+            "upload_completed",
+            project_id=project_id,
+            files_uploaded=len(files),
+            email_delivery=email_delivery,
+        )
         return UploadResponse(
             success=True,
             project_id=project_id,

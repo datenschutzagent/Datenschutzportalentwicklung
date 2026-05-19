@@ -4,6 +4,7 @@ from app.main import app
 from unittest.mock import MagicMock, patch, AsyncMock
 from app.config import settings
 import json
+from structlog.testing import capture_logs
 
 @pytest.mark.asyncio
 async def test_upload_documents():
@@ -142,3 +143,49 @@ async def test_upload_rejects_disallowed_extension():
 
             response = await client.post("/api/upload", data=data, files=files, headers=headers)
             assert response.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_upload_logs_email_failure_without_failing_request():
+    with patch("app.routes.upload.nextcloud") as mock_nextcloud, \
+         patch("app.routes.upload.email_service") as mock_email:
+
+        mock_nextcloud.test_connection = MagicMock(return_value=(True, "Connection successful"))
+        mock_nextcloud.create_folder = MagicMock(return_value=True)
+        mock_nextcloud.upload_file = AsyncMock(return_value=True)
+        mock_nextcloud.upload_metadata = AsyncMock(return_value=True)
+        mock_nextcloud.upload_content = AsyncMock(return_value=True)
+        mock_nextcloud.get_metadata = AsyncMock(return_value={})
+
+        mock_email.send_confirmation_email = AsyncMock(return_value=False)
+        mock_email.send_team_notification = AsyncMock(return_value=True)
+
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            headers = {"Authorization": f"Bearer {settings.api_token}"}
+            files = [
+                ("files", ("test.pdf", b"fake pdf content", "application/pdf")),
+            ]
+            data = {
+                "email": "test@uni-frankfurt.de",
+                "project_title": "Test Project",
+                "institution": "university",
+                "is_prospective_study": "false",
+                "file_categories": json.dumps({"test.pdf": "sonstiges"}),
+            }
+
+            with capture_logs() as cap_logs:
+                response = await client.post("/api/upload", data=data, files=files, headers=headers)
+
+            assert response.status_code == 200
+            assert response.json()["success"] is True
+
+            events = [log.get("event") for log in cap_logs]
+            assert "confirmation_email_send_failed" in events
+            assert "upload_email_delivery_failed" in events
+            assert "confirmation_email_sent" not in events
+
+            completed_logs = [log for log in cap_logs if log.get("event") == "upload_completed"]
+            assert len(completed_logs) == 1
+            assert completed_logs[0]["email_delivery"]["confirmation"] == "failed"
+            assert completed_logs[0]["email_delivery"]["team"] == "ok"
