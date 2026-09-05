@@ -71,7 +71,8 @@ class Settings(BaseSettings):
     log_redaction_secret: str
 
     # API
-    api_host: str = "0.0.0.0"
+    # Container-internal bind; Traefik is the only ingress (bandit B104 accepted).
+    api_host: str = "0.0.0.0"  # nosec B104
     api_port: int = 8000
     api_debug: bool = False
     cors_origins: List[str] = [

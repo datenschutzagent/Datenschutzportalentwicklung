@@ -53,11 +53,14 @@ Rate Limiting (via `slowapi`, keyed by Client-IP) schützt vor Brute-Force-Angri
 
 Bei Überschreitung: `429 Too Many Requests`
 
+!!! warning "Reverse Proxy"
+    Hinter Traefik sieht Uvicorn standardmäßig nur die IP des Traefik-Containers. Damit das Limit pro Client wirkt, startet das Backend mit `--proxy-headers` und `FORWARDED_ALLOW_IPS` (in `docker-compose.yml` gesetzt). Ohne diese Einstellung teilen sich **alle** Nutzer ein gemeinsames Limit.
+
 ## Datei-Upload-Sicherheit
 
-### Magic-Bytes-Validierung
+### Keine Magic-Bytes-Validierung (bewusster Trade-off)
 
-Datei-Uploads werden nicht nur anhand der Dateiendung geprüft, sondern auch durch Analyse des tatsächlichen Dateiinhalts (Magic Bytes) via `filetype`-Bibliothek. Damit werden Uploads verhindert, bei denen eine ausführbare Datei mit einer erlaubten Endung umbenannt wurde.
+Uploads werden **nur** anhand der Dateiendung (Allowlist) und der Größe geprüft. Eine frühere Inhaltsprüfung via `filetype` wurde entfernt, weil sie bei Office-/ODF-Dateien (ZIP-Container) zu False-Negatives führte. Umbenannte Dateien werden daher nicht erkannt; empfohlene Kompensation ist ein Virenscan im Storage (z. B. ClamAV/ICAP) und restriktive Download-Regeln in der Nextcloud. Details in `SECURITY.md`.
 
 ### Filename-Sanitierung
 
@@ -116,7 +119,7 @@ CORS ist auf das Minimum beschränkt:
 | A05 | Security Misconfiguration | Behoben | Security-Header-Middleware, kein Default-Token |
 | A06 | Vulnerable Components | Behoben | `python-jose` entfernt, alle Deps aktualisiert |
 | A07 | Auth Failures | Behoben | `hmac.compare_digest()`, JWT Literal-Algorithmus |
-| A08 | Software/Data Integrity | Behoben | Magic-Bytes-Validierung (`filetype`) |
+| A08 | Software/Data Integrity | Teilweise | Endungs-Allowlist, Größenlimit; keine Inhaltsprüfung (siehe oben). CI mit `pip-audit`/`npm audit`/Trivy, Dependabot |
 | A09 | Logging Failures | Behoben | Strukturiertes Logging, PII-Redaktion |
 | A10 | SSRF | N/A | Keine ausgehenden Requests auf Nutzereingaben |
 

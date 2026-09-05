@@ -189,3 +189,70 @@ async def test_upload_logs_email_failure_without_failing_request():
             assert len(completed_logs) == 1
             assert completed_logs[0]["email_delivery"]["confirmation"] == "failed"
             assert completed_logs[0]["email_delivery"]["team"] == "ok"
+
+
+@pytest.mark.asyncio
+async def test_upload_status_endpoint_removed():
+    """
+    The status endpoint exposed metadata.json (email, name, project details) of arbitrary
+    projects to anyone holding the public frontend token. It must not come back.
+    """
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        headers = {"Authorization": f"Bearer {settings.api_token}"}
+        response = await client.get("/api/upload/status/Some_Project_2026-01-01", headers=headers)
+        assert response.status_code in (404, 405)
+
+
+@pytest.mark.asyncio
+async def test_upload_errors_do_not_leak_internal_details():
+    """
+    Backend failures must not expose internal URLs, service accounts, paths or exception text.
+    """
+    with patch("app.routes.upload.nextcloud") as mock_nextcloud, \
+         patch("app.routes.upload.email_service"):
+        internal = "401 Unauthorized for https://cloud.internal/remote.php/dav/files/svc_user"
+        mock_nextcloud.test_connection = MagicMock(return_value=(False, internal))
+
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            headers = {"Authorization": f"Bearer {settings.api_token}"}
+            data = {"email": "test@uni-frankfurt.de", "project_title": "Leak Test", "institution": "university"}
+            files = [("files", ("test.pdf", b"x", "application/pdf"))]
+            response = await client.post("/api/upload", data=data, files=files, headers=headers)
+
+            assert response.status_code == 503
+            body = response.text
+            assert "cloud.internal" not in body
+            assert "svc_user" not in body
+            assert settings.nextcloud_base_path not in body
+
+
+@pytest.mark.asyncio
+async def test_upload_tolerates_non_object_file_categories():
+    """
+    A JSON array (or any non-object) in file_categories used to raise an AttributeError
+    that was echoed back as 'Internal server error: ...'. It must be ignored instead.
+    """
+    with patch("app.routes.upload.nextcloud") as mock_nextcloud, \
+         patch("app.routes.upload.email_service") as mock_email:
+        mock_nextcloud.test_connection = MagicMock(return_value=(True, "ok"))
+        mock_nextcloud.create_folder = MagicMock(return_value=True)
+        mock_nextcloud.upload_file = AsyncMock(return_value=True)
+        mock_nextcloud.upload_metadata = AsyncMock(return_value=True)
+        mock_nextcloud.upload_content = AsyncMock(return_value=True)
+        mock_email.send_confirmation_email = AsyncMock(return_value=True)
+        mock_email.send_team_notification = AsyncMock(return_value=True)
+
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            headers = {"Authorization": f"Bearer {settings.api_token}"}
+            data = {
+                "email": "test@uni-frankfurt.de",
+                "project_title": "Categories Test",
+                "institution": "university",
+                "file_categories": "[1, 2, 3]",
+            }
+            files = [("files", ("test.pdf", b"x", "application/pdf"))]
+            response = await client.post("/api/upload", data=data, files=files, headers=headers)
+            assert response.status_code == 200

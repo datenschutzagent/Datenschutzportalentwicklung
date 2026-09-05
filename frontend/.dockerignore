@@ -1,0 +1,10 @@
+# Never bake these into the image
+.env
+.env.*
+node_modules/
+build/
+dist/
+.vite/
+Dockerfile*
+nginx.conf.bak
+*.log

@@ -121,7 +121,8 @@ logs/
 *.db-journal
 
 # Docker
-.dockerignore
+# Traefik ACME storage (contains Let's Encrypt account + certificate private keys)
+letsencrypt/
 
 # Temporary files
 *.tmp

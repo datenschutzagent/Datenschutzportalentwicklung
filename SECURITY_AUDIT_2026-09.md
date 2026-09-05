@@ -24,7 +24,7 @@
 | 10 | **Mittel** | Blockierende, synchrone WebDAV-I/O im async-Handler → ein langsamer Upload blockiert den gesamten Server | Backend |
 | 11 | **Mittel** | Token-Exchange-Flow ist wirkungslos: statischer Token wird direkt auf `/upload` akzeptiert, JWT kann neue JWTs ausstellen; Doku stellt ihn als "HIGH behoben" dar | Backend / Doku |
 | 12 | **Mittel** | Kein HSTS, keine CSP für das Frontend, nginx-Header-Vererbungsfehler, Frontend-Port 3000 am Host vorbei an Traefik/TLS exponiert | Deployment |
-| 13 | **Mittel** | Backend-Image läuft als root, enthält `gcc`, Docs-/Test-/DB-Pakete; Prod-Compose mountet Quellcode; `.dockerignore` ist per `.gitignore` verboten | Deployment |
+| 13 | **Mittel** | Backend-Image läuft als root, enthält `gcc`, Test-/DB-Pakete; Prod-Compose mountet Quellcode; `.dockerignore` ist per `.gitignore` verboten | Deployment |
 | 14 | **Niedrig** | Dokumentation widersprüchlich/veraltet (Magic-Bytes-Prüfung wird in `CLAUDE.md` und `mkdocs/security.md` behauptet, ist aber entfernt) | Doku |
 | 15 | **Niedrig** | `/docs`, `/redoc`, `/openapi.json` öffentlich; `X-Request-ID` ungeprüft übernommen; PII kann über SMTP-Fehlertexte in Logs gelangen | Backend |
 | 16 | **Niedrig** | `letsencrypt/` (ACME-Private-Keys) nicht in `.gitignore`; `docs/` ist getrackt aber ignoriert; Traefik-Loglevel DEBUG als Default | Deployment |
@@ -143,7 +143,7 @@ Das ist kein Bug im engeren Sinn, aber `SECURITY.md` verkauft es als behobene HI
 
 ### 4.2 [MITTEL] Backend-Container
 - Läuft als **root** (kein `USER`), `gcc` im Prod-Image, kein Multi-Stage-Build.
-- `requirements.txt` installiert `mkdocs*`, `pytest`, `beautifulsoup4`, `sqlalchemy`, `alembic`, `passlib`, `filetype` – im Code ungenutzt (verifiziert via grep). Jedes davon ist Angriffsfläche und pip-audit-Rauschen im Prod-Image.
+- `requirements.txt` installiert `pytest`, `sqlalchemy`, `alembic`, `passlib`, `filetype` – im Code ungenutzt (verifiziert via grep). Jedes davon ist Angriffsfläche und pip-audit-Rauschen im Prod-Image.
 - Prod-Compose mountet `./backend:/app` ("for development") → Image-Inhalt ist irrelevant, es läuft was auf dem Host liegt; `.env` wird doppelt bereitgestellt (`env_file` + Volume).
 - `.gitignore` enthält `.dockerignore` → es kann kein `.dockerignore` committet werden; `COPY . .` kopiert `venv/`, `.env`, `tests/`, `__pycache__` ins Image, falls lokal vorhanden.
 - Floating Tags (`python:3.13-slim`, `node:20-alpine`, `nginx:alpine`, `traefik:v3`) ohne Digest.
@@ -251,3 +251,23 @@ Alle npm-Befunde betreffen Build-/Dev-Tooling, nicht das ausgelieferte Bundle. T
 13. Dockerfile: Multi-Stage, non-root, ungenutzte Pakete raus, `.dockerignore` erlauben, Digest-Pinning (4.2).
 14. Entscheidung zu Bot-Schutz/Double-Opt-in für den E-Mail-Versand (2.7) und ehrliche Neubewertung des Token-Flows in der Doku (2.9).
 15. Python-Lockfile mit Hashes, Trennung Prod/Dev/Docs-Requirements (5).
+
+---
+
+## 9. Umsetzungsstand (Branch `claude/security-cicd-analysis-8pn3gg`, 2026-09-05)
+
+| Maßnahme | Status | Wo |
+|---|---|---|
+| 1 Uvicorn vertraut Proxy-Headern (`--proxy-headers`, `FORWARDED_ALLOW_IPS`) | umgesetzt | `backend/Dockerfile`, `docker-compose.yml`, `env.example` |
+| 2 `GET /api/upload/status/{project_id}` entfernt, `get_metadata` entfernt | umgesetzt + Regressionstest | `backend/app/routes/upload.py`, `backend/app/services/nextcloud.py` |
+| 3 Generische Fehlermeldungen (503/500/Catch-all), `file_categories` nur als Objekt | umgesetzt + Regressionstests | `backend/app/routes/upload.py` |
+| 4 Frontend-Hostport 3000 entfernt; `letsencrypt/` ignoriert; `.dockerignore` erlaubt und angelegt | umgesetzt | `docker-compose.yml`, `.gitignore`, `backend/.dockerignore`, `frontend/.dockerignore` |
+| 5 `aiosmtplib` 5.1.2 (inkl. `ssl_context`→`tls_context`), `orjson` 3.11.6, `python-dotenv` 1.2.2, `pytest` 9 / `pytest-asyncio` 1.4, `email-validator` (2.1.0 war yanked); ungenutzte `sqlalchemy`/`alembic`/`passlib`/`filetype` entfernt; `mkdocs-material` 9.7.7, `pymdown-extensions` 11.0.1; `npm audit fix` (0 Findings) | umgesetzt, `pip-audit --strict` und `npm audit --audit-level=high` grün | `backend/requirements.txt`, `docs-requirements.txt`, `frontend/package-lock.json` |
+| 6 Doku konsistent (Magic Bytes, Proxy-Hinweis, A08-Status, Verweis auf dieses Audit) | umgesetzt | `CLAUDE.md`, `mkdocs/security.md`, `SECURITY.md` |
+| 12 Dependabot (pip ×2, npm, docker, docker-compose, github-actions; wöchentlich, gruppiert) | umgesetzt | `.github/dependabot.yml` |
+| 12 CI: pytest, bandit `-ll`, pip-audit `--strict`, npm audit, Frontend-Build, Docker-Builds + Trivy (CRITICAL blockt, HIGH informativ), TruffleHog, `mkdocs build --strict` + pip-audit | umgesetzt, lokal gegen frische Umgebungen verifiziert | `.github/workflows/ci.yml` |
+| Branch Protection auf `main` (Required Checks: `backend`, `frontend`, `docker`, `secrets`, `docs`) | **offen – nur in den Repo-Settings möglich** | GitHub → Settings → Branches |
+| Dependabot Alerts / Secret Scanning aktivieren | **offen – Repo-Settings** | GitHub → Settings → Code security |
+| 7–11, 13–17 (Body-Limit, Feldvalidierung, Kollisionsschutz, async I/O, HSTS/CSP, non-root Image, Token-Flow-Bewertung, Lockfile) | offen | siehe Abschnitt 8 |
+
+Hinweis: `docs/` (generierte MkDocs-Seite für GitHub Pages) wurde nicht neu gebaut; die geänderte `mkdocs/security.md` erscheint dort erst nach `mkdocs build` und Commit.

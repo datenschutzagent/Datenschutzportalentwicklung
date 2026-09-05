@@ -211,42 +211,6 @@ class NextcloudService:
                     pass
             return False
     
-    async def get_metadata(self, project_id: str) -> Dict[Any, Any]:
-        """
-        Retrieve project metadata from Nextcloud
-        """
-        tmp_path = None
-        try:
-            logger.debug("nextcloud_metadata_retrieving", project_id=project_id)
-            path = f"{settings.nextcloud_base_path}/{project_id}/metadata.json"
-            if self.client.check(path):
-                with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
-                    tmp_path = tmp_file.name
-                
-                self.client.download_sync(remote_path=path, local_path=tmp_path)
-                
-                with open(tmp_path, 'r') as f:
-                    metadata = json.load(f)
-                
-                if tmp_path and os.path.exists(tmp_path):
-                    os.unlink(tmp_path)
-                
-                logger.info("nextcloud_metadata_retrieved", project_id=project_id)
-                return metadata
-            
-            logger.warning("nextcloud_project_not_found", project_id=project_id)
-            raise FileNotFoundError(f"Project {project_id} not found")
-        except FileNotFoundError:
-            raise
-        except Exception as e:
-            logger.error("nextcloud_metadata_retrieve_failed", project_id=project_id, exc_info=True)
-            if tmp_path and os.path.exists(tmp_path):
-                try:
-                    os.unlink(tmp_path)
-                except OSError:
-                    pass
-            raise
-    
     def list_files(self, path: str) -> list:
         """
         List files in a Nextcloud directory

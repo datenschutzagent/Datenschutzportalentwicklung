@@ -67,7 +67,7 @@ class EmailService:
             elif settings.smtp_encryption == "ssl":
                 # SSL: Direct SSL/TLS connection (typically port 465)
                 smtp_kwargs["use_tls"] = True
-                smtp_kwargs["ssl_context"] = ssl.create_default_context()
+                smtp_kwargs["tls_context"] = ssl.create_default_context()
             else:  # none
                 smtp_kwargs["use_tls"] = False
                 smtp_kwargs["start_tls"] = False
