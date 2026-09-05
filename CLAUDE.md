@@ -101,10 +101,11 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `security`
 
 - **Never log PII in plaintext** – email addresses are HMAC-hashed via `LOG_REDACTION_SECRET`
 - **Token comparison** must use `hmac.compare_digest()`, not `==`
-- **File uploads**: always sanitize filenames and validate magic bytes
+- **File uploads**: always sanitize filenames and enforce the extension allowlist (magic-byte validation was deliberately removed – see `SECURITY.md`)
 - **HTML in emails**: always escape user input with `html.escape()`
 - **No secrets in code**: use environment variables only
-- Rate limits: `/api/upload` 10/hr, `/api/upload-token` 30/hr per IP
+- Rate limits: `/api/upload` 10/hr, `/api/upload-token` 30/hr per IP – only works when uvicorn trusts the proxy (`--proxy-headers` + `FORWARDED_ALLOW_IPS`)
+- **Error responses** must stay generic; internal URLs, paths and exception text go to the log only
 - Full security details: `SECURITY.md` and `mkdocs/security.md`
 
 ## Testing
@@ -119,6 +120,8 @@ pytest --cov=app tests/
 cd frontend
 npm run build  # verify build succeeds
 ```
+
+CI (`.github/workflows/ci.yml`) runs on every push/PR: pytest, bandit, pip-audit, `npm audit`, frontend build, Docker image builds with Trivy scan, secret scan and `mkdocs build --strict`. Dependabot (`.github/dependabot.yml`) opens weekly update PRs for pip, npm, Docker base images and Actions.
 
 ## Documentation
 

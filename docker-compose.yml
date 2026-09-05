@@ -41,6 +41,11 @@ services:
     environment:
       API_HOST: ${API_HOST:-0.0.0.0}
       API_PORT: ${API_PORT:-8000}
+      # Hosts/CIDRs whose X-Forwarded-For header uvicorn trusts. The backend is only reachable
+      # from internal Docker networks (Traefik is the sole ingress), so trusting all internal
+      # peers is acceptable. Without this, rate limiting is keyed to the Traefik container IP
+      # and therefore shared by ALL users.
+      FORWARDED_ALLOW_IPS: ${FORWARDED_ALLOW_IPS:-*}
     volumes:
       # Mount for development (optional - comment out for production)
       - ./backend:/app
@@ -73,8 +78,7 @@ services:
         # SECURITY: VITE_API_TOKEN must always be set via .env – never rely on this fallback in production.
         VITE_API_TOKEN: ${VITE_API_TOKEN:?VITE_API_TOKEN must be set in .env}
     container_name: datenschutzportal-frontend
-    ports:
-      - "3000:80"
+    # SECURITY: no host port mapping – Traefik (TLS) is the sole ingress for the frontend as well.
     environment:
       # NOTE: Vite production build reads VITE_* at build-time (args above).
       # Keeping runtime env here doesn't hurt, but won't change the built JS.

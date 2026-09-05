@@ -18,5 +18,7 @@ COPY . .
 # Expose port
 EXPOSE 8000
 
-# Run uvicorn
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run uvicorn. --proxy-headers makes uvicorn honour X-Forwarded-For/-Proto from the reverse proxy,
+# but only from hosts listed in FORWARDED_ALLOW_IPS (env, default 127.0.0.1). Without this the
+# per-IP rate limiter sees the Traefik container IP for every request.
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]

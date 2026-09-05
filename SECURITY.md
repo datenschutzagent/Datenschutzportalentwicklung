@@ -17,7 +17,9 @@
 | Niedrig     | 4              | 2                 | 2                 |
 | Info        | 1              | 0                 | 1                 |
 
-**Status: Alle gefundenen Schwachstellen behoben.**
+**Status: Alle in dieser Runde gefundenen Schwachstellen behoben.**
+
+> **Folge-Audit 2026-09-05:** siehe [`SECURITY_AUDIT_2026-09.md`](SECURITY_AUDIT_2026-09.md). Dort sind weitere Befunde (u. a. Rate Limiting hinter Traefik, Metadaten-Endpunkt, fehlende Body-Limits, CI/CD) mit Umsetzungsstand dokumentiert.
 
 ---
 

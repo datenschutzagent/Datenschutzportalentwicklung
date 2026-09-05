@@ -109,11 +109,14 @@ async def upload_documents(
         categories_map = {}
         if file_categories:
             try:
-                categories_map = json.loads(file_categories)
-                logger.debug("file_categories_parsed", mappings_count=len(categories_map))
-            except Exception as e:
+                parsed = json.loads(file_categories)
+                if isinstance(parsed, dict):
+                    categories_map = parsed
+                    logger.debug("file_categories_parsed", mappings_count=len(categories_map))
+                else:
+                    logger.warning("file_categories_not_an_object", value_type=type(parsed).__name__)
+            except ValueError:
                 logger.warning("file_categories_parse_failed", exc_info=True)
-                pass
         
         # Validate files
         logger.debug("files_validating", files_count=len(files))
@@ -144,17 +147,18 @@ async def upload_documents(
         # Test connection before attempting folder creation
         connection_ok, connection_msg = nextcloud.test_connection()
         if not connection_ok:
-            logger.error("nextcloud_connection_failed", project_id=project_id)
+            # Log the backend error in detail, but never expose internal URLs/accounts to the client (CWE-209)
+            logger.error("nextcloud_connection_failed", project_id=project_id, error=connection_msg)
             raise HTTPException(
                 status_code=503,
-                detail=f"Nextcloud connection failed. Please check Nextcloud configuration and credentials. Error: {connection_msg}"
+                detail="Storage backend unavailable. Please try again later."
             )
         
         if not nextcloud.create_folder(project_path):
             logger.error("nextcloud_project_folder_create_failed", project_id=project_id)
             raise HTTPException(
                 status_code=500,
-                detail=f"Failed to create project folder in Nextcloud at path: {project_path}. Please check Nextcloud permissions and ensure the base path exists."
+                detail="Failed to create project folder in storage."
             )
         
         # Upload files directly to project folder (no subfolders)
@@ -170,7 +174,7 @@ async def upload_documents(
             file_path = f"{project_path}/{safe_name}"
             if not await nextcloud.upload_file(file, file_path):
                 logger.error("file_upload_failed", project_id=project_id, category=category)
-                raise HTTPException(status_code=500, detail=f"Failed to upload file: {safe_name}")
+                raise HTTPException(status_code=500, detail="Failed to upload file.")
             
             uploaded_files.append({
                 "filename": safe_name,
@@ -285,17 +289,7 @@ async def upload_documents(
     except HTTPException:
         # Re-raise HTTP exceptions as-is
         raise
-    except Exception as e:
-        logger.error("upload_unexpected_error", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
-
-@router.get("/upload/status/{project_id}", dependencies=[Depends(verify_token)])
-async def get_upload_status(project_id: str):
-    """
-    Get upload status for a project
-    """
-    try:
-        metadata = await nextcloud.get_metadata(project_id)
-        return metadata
     except Exception:
-        raise HTTPException(status_code=404, detail="Project not found")
+        # Details go to the log (correlated via X-Request-ID); the client gets a generic message (CWE-209)
+        logger.error("upload_unexpected_error", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")

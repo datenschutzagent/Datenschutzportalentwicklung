@@ -7,6 +7,9 @@ repo_name: Datenschutzportal
 
 docs_dir: mkdocs
 site_dir: docs
+# README.md in the docs dir is for GitHub only; it would otherwise conflict with index.md
+exclude_docs: |
+  README.md
 
 plugins:
   - search
