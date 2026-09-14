@@ -17,8 +17,11 @@ updates:
       prefix: "chore(deps)"
     labels: [dependencies, backend]
 
+  # Docs tooling lives in mkdocs/requirements.txt. NOTE: Dependabot's pip scanner recurses
+  # into subdirectories, so a root-level (/) pip entry would also pick up backend/requirements.txt
+  # and open duplicate PRs for backend packages.
   - package-ecosystem: pip
-    directory: /
+    directory: /mkdocs
     schedule:
       interval: weekly
       day: monday

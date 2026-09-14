@@ -271,3 +271,39 @@ Alle npm-Befunde betreffen Build-/Dev-Tooling, nicht das ausgelieferte Bundle. T
 | 7–11, 13–17 (Body-Limit, Feldvalidierung, Kollisionsschutz, async I/O, HSTS/CSP, non-root Image, Token-Flow-Bewertung, Lockfile) | offen | siehe Abschnitt 8 |
 
 Hinweis: `docs/` (generierte MkDocs-Seite für GitHub Pages) wurde nicht neu gebaut; die geänderte `mkdocs/security.md` erscheint dort erst nach `mkdocs build` und Commit.
+
+---
+
+## 10. Nachprüfung 2026-09-14 (Branch `claude/serene-mendel-kbdf3z`)
+
+**Methode:** Code-Review von `main` @ `e8710e2`, Auswertung der CI-Läufe und der 22 offenen Dependabot-PRs (#19–#25, #27, #28, #30–#42), lokale Verifikation aller Updates (pytest auf Python 3.13, bandit, pip-audit, `npm ci` + `npm run build` + `npm audit`, `mkdocs build --strict`).
+
+### 10.1 CI/CD-Befunde
+
+| Schwere | Befund | Status |
+|---|---|---|
+| Hoch (blockierend) | Trivy-Job schlägt seit 2026-09-14 auf **jedem** Backend-Build fehl: `perl-base 5.40.1-6` im Basis-Image `python:*-slim` hat drei CRITICAL-CVEs (CVE-2026-13221, -42496, -8376), Fix `5.40.1-6+deb13u1` ist in Debian verfügbar, aber noch nicht im Image-Tag. Betrifft `main` genauso wie alle PRs. | behoben: `apt-get upgrade` im Dockerfile, `pull: true` im Build |
+| Mittel | Dependabot `pip`-Eintrag für `/` rekursiert in `backend/` → doppelte PRs für Backend-Pakete (#31≙#32, #42⊇#41, #33/#34/#35 nur über den Root-Eintrag). Doppelte PRs konfligieren gegenseitig und erzeugen Rebase-/CI-Schleifen. | behoben: Docs-Requirements nach `mkdocs/requirements.txt`, Eintrag auf `/mkdocs` |
+| Mittel | `trufflesecurity/trufflehog@main` – unversionierte Action von einem beweglichen Branch (Supply-Chain-Risiko im Secret-Scanner selbst). | behoben: Pin auf `v3.97.4` |
+| Niedrig | Tests liefen auf Python 3.13 / Node 20, die Docker-Images (nach Dependabot) auf Python 3.14 / Node 26 – getestet wurde eine andere Runtime als ausgeliefert. | behoben: CI auf 3.14 / 26 |
+| Niedrig | Actions sind nur per Major-Tag gepinnt (`@v7`), nicht per SHA. `npm run build` ist weiterhin der einzige Frontend-Check (kein `tsc`, kein Lint). Keine Branch Protection auf `main` (API: `protected: false`). | offen |
+| Niedrig | `docs/` (GitHub Pages) zuletzt am 2026-04-21 gebaut, `mkdocs/` zuletzt am 2026-09-05 geändert → veröffentlichte Doku ist veraltet. | offen (Pages-Deploy-Workflow empfohlen) |
+
+### 10.2 Dependabot-PRs
+
+Alle 22 PRs wurden lokal in diesen Branch gemergt (Merge-Commits, Konflikte in `ci.yml`, `backend/requirements.txt`, `package.json`/`package-lock.json` aufgelöst; Lockfile per `npm install --package-lock-only` neu erzeugt). Kompatibilität:
+
+- GitHub Actions Majors (#19, #21, #22, #24, #25): reine Node-24-Runtime-Updates, beheben die "Node 20 deprecated"-Warnung. Unkritisch.
+- `python:3.14-slim` (#20), `node:26-alpine` (#23): Build in CI grün; Tests jetzt auf derselben Version.
+- pip-Range-Bumps (#27, #28, #30–#34): reine Untergrenzen; CI installierte diese Versionen ohnehin bereits.
+- `structlog` 26.1.0 (#35), `orjson` 3.12.0, `webdavclient3` 3.14.7, `aiosmtplib` 5.1.3, `python-dotenv` 1.2.3 (#41/#42): 11/11 Tests grün, bandit/pip-audit sauber.
+- npm (#36–#40): Build grün, `npm audit` 0 Findings. Alle 22 verwendeten `lucide-react`-Icons existieren in 1.x weiterhin. `recharts` 3 und die 27 Radix-Pakete werden vom Frontend **nicht verwendet** (siehe 10.3), die Majors sind daher risikolos.
+
+Hinweis: Damit GitHub die Dependabot-PRs als "merged" schließt, muss dieser Branch per **Merge-Commit** (nicht Squash/Rebase) nach `main`; andernfalls schließt Dependabot sie beim nächsten Lauf selbst als überholt.
+
+### 10.3 Weitere Befunde am Code (neu gegenüber Abschnitt 1–8)
+
+- **Totes Frontend-UI-Kit:** `frontend/src/components/ui/*` (40 Dateien) wird nirgends importiert. Von 40 `dependencies` werden nur `react`, `react-dom` und `lucide-react` benutzt; `clsx`, `tailwind-merge`, `class-variance-authority` nur aus dem toten Code heraus. 37 Pakete (Radix, recharts, react-hook-form, cmdk, embla, vaul, sonner, …) sind reine Supply-Chain-Fläche und Dependabot-Rauschen. `chart.tsx` enthält das einzige `dangerouslySetInnerHTML` im Projekt (ungenutzt).
+- `frontend/src/index.css` ist vorkompiliertes Tailwind-4.1.3-CSS; `tailwindcss` ist keine Abhängigkeit, Klassenänderungen im JSX wirken nicht ohne Neukompilierung. `CLAUDE.md` beschreibt einen Tailwind-Build, den es nicht gibt.
+- `file_categories`-Werte werden ungeprüft übernommen (beliebiger JSON-Typ) und landen in `metadata.json`, `README.md` und der Bestätigungsmail (dort autoescaped; ein Nicht-String-Wert lässt das Template-Rendering scheitern → Mail fehlt, Upload gilt als erfolgreich).
+- Offene Punkte aus Abschnitt 8 (Body-/Dateianzahl-Limit, Feldvalidierung, Ordner-Kollisionen, blockierende WebDAV-I/O, HSTS/CSP, root-Container mit `gcc`, Quellcode-Mount im Prod-Compose, `.env.example`-Duplikat) sind unverändert offen.

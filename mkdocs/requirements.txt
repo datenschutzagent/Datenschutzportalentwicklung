@@ -1,9 +1,9 @@
-beautifulsoup4==4.14.3
+beautifulsoup4==4.15.0
 mkdocs==1.6.1
-mkdocs-get-deps==0.2.0
+mkdocs-get-deps==0.2.2
 # mkdocs-material >=9.7.7 fixes CVE-2026-73295
 mkdocs-material==9.7.7
 mkdocs-material-extensions==1.3.1
 mkdocs-mermaid2-plugin==1.2.3
 # pymdown-extensions >=11.0.1 fixes PYSEC-2026-2999/-3609/-3654
-pymdown-extensions==11.0.1
+pymdown-extensions==11.0.2
