@@ -1,5 +1,5 @@
 # --- Security-patched versions (see SECURITY.md) ---
-fastapi>=0.115.0
+fastapi>=0.141.1
 uvicorn[standard]>=0.27.0
 # python-multipart >=0.0.22 fixes CVE-2026-24486 (path traversal) and CVE-2024-53981
 python-multipart>=0.0.22
