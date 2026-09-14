@@ -47,7 +47,7 @@
             "vaul": "^1.1.2"
       },
       "devDependencies": {
-            "@types/node": "^26.4.1",
+            "@types/node": "^26.5.1",
             "@vitejs/plugin-react-swc": "^4.3.3",
             "vite": "^6.4.1"
       },
