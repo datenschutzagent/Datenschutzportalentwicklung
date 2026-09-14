@@ -44,7 +44,7 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 
 # Build documentation
-pip install -r requirements.txt  # project root
+pip install -r mkdocs/requirements.txt
 mkdocs build
 mkdocs serve  # preview at http://localhost:8000
 ```
