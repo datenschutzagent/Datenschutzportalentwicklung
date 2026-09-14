@@ -4,7 +4,7 @@ uvicorn[standard]>=0.27.0
 # python-multipart >=0.0.32 fixes CVE-2026-24486 (path traversal) and CVE-2024-53981
 python-multipart>=0.0.32
 pydantic>=2.13.5
-pydantic-settings>=2.5.0
+pydantic-settings>=2.15.0
 structlog==26.1.0
 orjson==3.12.0
 webdavclient3==3.14.7
